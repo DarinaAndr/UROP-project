@@ -1,0 +1,55 @@
+#data for dataset
+
+wnut_train = '/Users/DAndy/Programming/wnutdata/data/de/train.norm'
+wnut = pd.read_table(wnut_train, header=None)
+
+wnut_dev = '/Users/DAndy/Programming/wnutdata/data/de/dev.norm'
+wnuttest = pd.read_table(wnut_dev, header=None)
+
+#orderin in ascending most frequent combination pairs             
+
+wnuttrain=wnut.fillna("")
+
+#wnut = pd.read_table(wnut_train, header=None) from before, now sorting by ascending frequency
+wnuttrain['a'] =  pd.DataFrame(np.sort(wnuttrain.values, 1)).groupby(list(range(len(wnuttrain.columns))))[0].transform('size')
+#print(wnuttrain)
+traindf = wnuttrain.sort_values(['a'], ascending=True)
+#print(traindf)
+
+origtok = traindf[0].values.tolist()
+trainedtok = traindf[1].values.tolist()
+
+
+# using zip() to convert lists to dictionary
+traindict = dict(zip(origtok, trainedtok))
+
+countOfWrongWords=0
+countOfCorrectWords=0
+countOfAllWords=0
+countOfNormedWords=0
+countofcaperrors=0
+        
+wnuttest['mynormalisation'] = wnuttest[1].map(traindict)
+for i in wnuttest.index:
+    tok1 = wnuttest[0][i]
+    tok2 = wnuttest[1][i]
+    tok3 = wnuttest['mynormalisation'][i]
+    if pd.isna(tok3):
+        wnuttest['mynormalisation'][i]=wnuttest[0][i]
+    if not pd.isna(tok1) and not pd.isna(tok2): #checks that data is not empty
+        if re.search(r"[0-9A-Za-z]", tok1): #checks that the first word is real and needs normalisation
+          countOfAllWords +=1
+        if tok1!=tok2:
+            countOfNormedWords += 1
+        if tok1!=tok2 and tok2==tok3:
+            countOfCorrectWords +=1
+        if tok1!=tok2 and not tok2==tok3:
+            countOfWrongWords += 1
+        if tok2[0].isupper() is True and not tok1[0].isupper() is True:
+                countofcaperrors+=1
+
+
+percentage = (countOfCorrectWords/countOfNormedWords)*100
+print('Capital letter errors =', countofcaperrors)
+print(percentage)
+print('Out of %i tokens, %i needed to be normalised and %i (%i percent) have been normalised correctly' % (countOfAllWords, countOfNormedWords, countOfCorrectWords, percentage))
